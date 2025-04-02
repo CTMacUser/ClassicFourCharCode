@@ -69,3 +69,25 @@ func debugPrint(out input: FourCharCode, as output: String) async throws {
 func read(in input: String, as expected: FourCharCode?) async throws {
   #expect(ClassicFourCharCode(input)?.rawValue == expected)
 }
+
+/// Test `Codable` translation.
+@Test(
+  "Codable support",
+  arguments: [
+    0,
+    0x4162_4344,
+  ]
+)
+func codable(_ value: FourCharCode) async throws {
+  let valueString = String(describing: value)
+  let jsonData = valueString.data(using: .utf8)!
+  let decoder = JSONDecoder()
+  let encoder = JSONEncoder()
+  let directCode = ClassicFourCharCode(rawValue: value)
+  let jsonCode = try decoder.decode(ClassicFourCharCode.self, from: jsonData)
+  #expect(directCode == jsonCode)
+
+  let codedDirect = try encoder.encode(directCode)
+  let coded = String(data: codedDirect, encoding: .utf8)
+  #expect(coded == valueString)
+}

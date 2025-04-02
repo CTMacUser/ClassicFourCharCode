@@ -20,11 +20,16 @@ public struct ClassicFourCharCode: RawRepresentable {
 
 // MARK: Basic Behaviors
 
-extension ClassicFourCharCode: BitwiseCopyable, Decodable, Encodable, Equatable,
-  Hashable, Sendable
-{}
+extension ClassicFourCharCode: BitwiseCopyable, Equatable, Hashable, Sendable {}
 
-// MARK: Text Streaming
+// MARK: Serialization
+
+extension ClassicFourCharCode: Encodable {
+  public func encode(to encoder: any Encoder) throws {
+    var container = encoder.singleValueContainer()
+    try container.encode(rawValue)
+  }
+}
 
 extension ClassicFourCharCode: CustomDebugStringConvertible {
   public var debugDescription: String {
@@ -89,5 +94,12 @@ extension ClassicFourCharCode: LosslessStringConvertible {
 
       self.init(rawValue: code)
     }
+  }
+}
+
+extension ClassicFourCharCode: Decodable {
+  public init(from decoder: any Decoder) throws {
+    let value = try decoder.singleValueContainer()
+    self.init(rawValue: try value.decode(RawValue.self))
   }
 }
