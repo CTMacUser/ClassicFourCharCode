@@ -54,7 +54,9 @@ extension ClassicFourCharCode: LosslessStringConvertible {
     // Valid representations are either four or eight characters exactly.
     guard
       let fourthIndex = description.index(
-        description.startIndex, offsetBy: +4, limitedBy: description.endIndex
+        description.startIndex,
+        offsetBy: +4,
+        limitedBy: description.endIndex
       )
     else {
       // String is too short.
@@ -65,7 +67,8 @@ extension ClassicFourCharCode: LosslessStringConvertible {
       // Look for the four-character non-debug representation.
       guard
         let roman = description.data(
-          using: .macOSRoman, allowLossyConversion: false
+          using: .macOSRoman,
+          allowLossyConversion: false
         )
       else {
         // String isn't in Mac OS Roman encoding.
@@ -83,7 +86,9 @@ extension ClassicFourCharCode: LosslessStringConvertible {
       // Look for the eight-character debug representation.
       guard
         let eighthIndex = description.index(
-          fourthIndex, offsetBy: +4, limitedBy: description.endIndex
+          fourthIndex,
+          offsetBy: +4,
+          limitedBy: description.endIndex
         ), eighthIndex == description.endIndex,
         let code = RawValue(description, radix: 16)
       else {

@@ -15,7 +15,8 @@ import Testing
       String(repeating: "\u{0}" as Character, count: 4),
       "AbCD",
     ]
-  ))
+  )
+)
 func regularPrint(out input: FourCharCode, as output: String) async throws {
   #expect(String(describing: ClassicFourCharCode(rawValue: input)) == output)
 }
@@ -32,7 +33,8 @@ func regularPrint(out input: FourCharCode, as output: String) async throws {
       String(repeating: "0" as Character, count: 8),
       "41624344",
     ]
-  ))
+  )
+)
 func debugPrint(out input: FourCharCode, as output: String) async throws {
   #expect(String(reflecting: ClassicFourCharCode(rawValue: input)) == output)
 }
@@ -65,7 +67,8 @@ func debugPrint(out input: FourCharCode, as output: String) async throws {
       nil,
       nil,
     ]
-  ))
+  )
+)
 func read(in input: String, as expected: FourCharCode?) async throws {
   #expect(ClassicFourCharCode(input)?.rawValue == expected)
 }
