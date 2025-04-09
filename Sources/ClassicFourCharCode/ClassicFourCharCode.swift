@@ -143,3 +143,14 @@ extension ClassicFourCharCode {
   @inlinable
   public var isPrintable: Bool { !hasLowAsciiCode && !hasDeleteCode }
 }
+
+// MARK: Element Access
+
+extension ClassicFourCharCode: ContiguousBytes {
+  public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R)
+    rethrows -> R
+  {
+    var bigRawValue = rawValue.bigEndian
+    return try Swift.withUnsafeBytes(of: &bigRawValue, body)
+  }
+}

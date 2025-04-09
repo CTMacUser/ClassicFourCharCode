@@ -129,3 +129,22 @@ func wholesaleAssignment() async throws {
   code.rawValue = 0x4167_4344
   #expect(String(describing: code) == "AgCD")
 }
+
+/// Test collection access via raw memory access.
+@Test(
+  "Immutable raw memory access",
+  arguments: zip(
+    [
+      0,
+      0x4142_4344,
+    ],
+    [
+      [0, 0, 0, 0],
+      [0x41, 0x42, 0x43, 0x44],
+    ]
+  )
+)
+func memoryRead(_ rawCode: FourCharCode, _ octets: [UInt8]) async throws {
+  let code = ClassicFourCharCode(rawValue: rawCode)
+  #expect(code.withUnsafeBytes { $0.elementsEqual(octets) })
+}
