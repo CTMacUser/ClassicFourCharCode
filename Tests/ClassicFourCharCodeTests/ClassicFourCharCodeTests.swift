@@ -94,3 +94,29 @@ func codable(_ value: FourCharCode) async throws {
   let coded = String(data: codedDirect, encoding: .utf8)
   #expect(coded == valueString)
 }
+
+/// Test if `String` conversion results are actually printable.
+@Test(
+  "Printable checks",
+  arguments: zip(
+    [
+      0,
+      0x4142_4344,
+      0x4501_4650,
+      0x527F_5354,
+      0x7F55_1356,
+      0x5782_C2DD,
+    ],
+    [
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+    ]
+  )
+)
+func printable(code: FourCharCode, expecting: Bool) async throws {
+  #expect(ClassicFourCharCode(rawValue: code).isPrintable == expecting)
+}

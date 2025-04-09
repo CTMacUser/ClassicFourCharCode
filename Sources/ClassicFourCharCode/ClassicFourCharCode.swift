@@ -108,3 +108,38 @@ extension ClassicFourCharCode: Decodable {
     self.init(rawValue: try value.decode(RawValue.self))
   }
 }
+
+extension ClassicFourCharCode {
+  /// Whether at least one stored code corresponds to
+  /// a low-value ASCII control character (`0..<0x20`).
+  @usableFromInline
+  var hasLowAsciiCode: Bool {
+    // Adapted from "Bit Twiddling Hacks" at
+    // <https://graphics.stanford.edu/~seander/bithacks.html>.
+    //
+    // Specifically, the "Determine if a word has a byte less than n" chapter.
+    (rawValue &- 0x2020_2020) & ~rawValue & 0x8080_8080 != 0
+  }
+  /// Whether at least one stored code corresponds to
+  /// the traditional delete character (`U+007F` "DELETE").
+  @usableFromInline
+  var hasDeleteCode: Bool {
+    // Adapted from "Bit Twiddling Hacks" at
+    // <https://graphics.stanford.edu/~seander/bithacks.html>.
+    //
+    // Specifically, the "Determine if a word has a byte equal to n" chapter.
+    let delStripped = rawValue ^ 0x7F7F_7F7F
+    return (delStripped &- 0x0101_0101) & ~delStripped & 0x8080_8080 != 0
+  }
+  /// Whether this value's string rendition can be properly printed out.
+  ///
+  /// The string will be printable unless it contains at
+  /// least one unprintable coded character.
+  /// For the Mac OS Roman character set,
+  /// the unprintable characters are the ASCII control characters,
+  /// which are the DEL character and the sub-Space characters.
+  /// Note that the traditional space and non-breaking space characters are not
+  /// considered control characters.
+  @inlinable
+  public var isPrintable: Bool { !hasLowAsciiCode && !hasDeleteCode }
+}
