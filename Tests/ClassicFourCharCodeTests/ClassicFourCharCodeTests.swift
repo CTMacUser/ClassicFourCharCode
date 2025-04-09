@@ -120,3 +120,12 @@ func codable(_ value: FourCharCode) async throws {
 func printable(code: FourCharCode, expecting: Bool) async throws {
   #expect(ClassicFourCharCode(rawValue: code).isPrintable == expecting)
 }
+
+/// Test assignment to the code pack all at once.
+@Test("Assignment through one value")
+func wholesaleAssignment() async throws {
+  var code = ClassicFourCharCode(rawValue: 0x4142_4344)
+  #expect(String(describing: code) == "ABCD")
+  code.rawValue = 0x4167_4344
+  #expect(String(describing: code) == "AgCD")
+}
