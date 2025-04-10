@@ -110,26 +110,36 @@ extension ClassicFourCharCode: Decodable {
 }
 
 extension ClassicFourCharCode {
-  /// Whether at least one stored code corresponds to
-  /// a low-value ASCII control character (`0..<0x20`).
+  /// Determines if at least one stored octet is less than the given value.
+  ///
+  /// - Precondition: `limit < 0x80`.
+  ///
+  /// - Parameter limit: The minimum value that can't trigger `true`.
+  /// - Returns: `false` if every stored octet is at least `limit`;
+  ///   otherwise, `true`.
   @usableFromInline
-  var hasLowAsciiCode: Bool {
+  func haveOctetsUnder(_ limit: UInt8) -> Bool {
     // Adapted from "Bit Twiddling Hacks" at
     // <https://graphics.stanford.edu/~seander/bithacks.html>.
     //
     // Specifically, the "Determine if a word has a byte less than n" chapter.
-    (rawValue &- 0x2020_2020) & ~rawValue & 0x8080_8080 != 0
+    let spreadLimit = FourCharCode(limit) &* 0x0101_0101
+    return (rawValue &- spreadLimit) & ~rawValue & 0x8080_8080 != 0
   }
-  /// Whether at least one stored code corresponds to
-  /// the traditional delete character (`U+007F` "DELETE").
+  /// Determines if the given value is stored in any of this code's octets.
+  ///
+  /// - Parameter match: The value to search for.
+  /// - Returns: `false` if `match` isn't anywhere in the code;
+  ///   otherwise, `true`.
   @usableFromInline
-  var hasDeleteCode: Bool {
+  func hasOctet(of match: UInt8) -> Bool {
     // Adapted from "Bit Twiddling Hacks" at
     // <https://graphics.stanford.edu/~seander/bithacks.html>.
     //
     // Specifically, the "Determine if a word has a byte equal to n" chapter.
-    let delStripped = rawValue ^ 0x7F7F_7F7F
-    return (delStripped &- 0x0101_0101) & ~delStripped & 0x8080_8080 != 0
+    // (Plus reusing code from the chapter `haveOctetsUnder(_:)` uses.)
+    let zeroOutMask = FourCharCode(match) &* 0x0101_0101
+    return Self(rawValue: rawValue ^ zeroOutMask).haveOctetsUnder(1)
   }
   /// Whether this value's string rendition can be properly printed out.
   ///
@@ -141,7 +151,7 @@ extension ClassicFourCharCode {
   /// Note that the traditional space and non-breaking space characters are not
   /// considered control characters.
   @inlinable
-  public var isPrintable: Bool { !hasLowAsciiCode && !hasDeleteCode }
+  public var isPrintable: Bool { !haveOctetsUnder(0x20) && !hasOctet(of: 0x7F) }
 }
 
 // MARK: Element Access
