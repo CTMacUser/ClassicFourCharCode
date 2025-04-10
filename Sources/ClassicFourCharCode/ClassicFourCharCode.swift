@@ -154,3 +154,54 @@ extension ClassicFourCharCode: ContiguousBytes {
     return try Swift.withUnsafeBytes(of: &bigRawValue, body)
   }
 }
+
+extension ClassicFourCharCode: Sequence {
+  public struct Iterator: IteratorProtocol {
+    /// The remaining octets to vend.
+    var remaining = 4
+    /// The embedded octets to vend.
+    var octets: UInt32
+
+    /// Creates a vended sequence of the octets of the given value,
+    /// but with that value's highest octet first.
+    ///
+    /// - Parameter codes: The value with all the vended octets embedded in it.
+    @usableFromInline
+    init(_ codes: FourCharCode) {
+      octets = codes.byteSwapped
+    }
+
+    mutating public func next() -> UInt8? {
+      guard remaining > 0 else { return nil }
+      defer { octets >>= 8 }
+
+      remaining -= 1
+      return UInt8(truncatingIfNeeded: octets)
+    }
+  }
+
+  public func makeIterator() -> Iterator {
+    return .init(rawValue)
+  }
+
+  public var underestimatedCount: Int { MemoryLayout.size(ofValue: rawValue) }
+
+  public func _customContainsEquatableElement(_ element: Element) -> Bool? {
+    // Adapted from "Bit Twiddling Hacks" at
+    // <https://graphics.stanford.edu/~seander/bithacks.html>.
+    //
+    // Specifically, the "Determine if a word has a byte equal to n" chapter.
+    let spreadElement = FourCharCode(element) &* 0x0101_0101
+    let elementMasked = rawValue ^ spreadElement
+    return (elementMasked &- 0x0101_0101) & ~elementMasked & 0x8080_8080 != 0
+  }
+  public func withContiguousStorageIfAvailable<R>(
+    _ body: (UnsafeBufferPointer<Iterator.Element>) throws -> R
+  ) rethrows -> R? {
+    return try .some(
+      self.withUnsafeBytes {
+        return try $0.withMemoryRebound(to: Element.self, body)
+      }
+    )
+  }
+}
