@@ -190,21 +190,19 @@ extension ClassicFourCharCode: Sequence {
     }
   }
 
+  @inlinable
   public func makeIterator() -> Iterator {
     return .init(rawValue)
   }
 
+  @inlinable
   public var underestimatedCount: Int { MemoryLayout.size(ofValue: rawValue) }
 
+  @inlinable
   public func _customContainsEquatableElement(_ element: Element) -> Bool? {
-    // Adapted from "Bit Twiddling Hacks" at
-    // <https://graphics.stanford.edu/~seander/bithacks.html>.
-    //
-    // Specifically, the "Determine if a word has a byte equal to n" chapter.
-    let spreadElement = FourCharCode(element) &* 0x0101_0101
-    let elementMasked = rawValue ^ spreadElement
-    return (elementMasked &- 0x0101_0101) & ~elementMasked & 0x8080_8080 != 0
+    return .some(self.hasOctet(of: element))
   }
+  @inlinable
   public func withContiguousStorageIfAvailable<R>(
     _ body: (UnsafeBufferPointer<Iterator.Element>) throws -> R
   ) rethrows -> R? {
