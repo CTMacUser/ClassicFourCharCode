@@ -173,3 +173,37 @@ func sequencing(_ rawCode: FourCharCode, `as` octets: [UInt8]) async throws {
   #expect(code.elementsEqual(octets))
   #expect(!octets.map { code.contains($0) }.contains(false))
 }
+
+/// Test repeating-value initializer.
+@Test("Repeating single octet initializer")
+func repeating() async throws {
+  for i in UInt8.min...UInt8.max {
+    let code = ClassicFourCharCode(repeating: i)
+    let expectedRawValue = stride(from: 24, through: 0, by: -8).map {
+      FourCharCode(i) << $0
+    }.reduce(0, |)
+    #expect(code.elementsEqual(repeatElement(i, count: 4)))
+    #expect(code.rawValue == expectedRawValue)
+  }
+}
+
+/// Test seperate-bytes initializer.
+@Test(
+  "Individual byte initializer",
+  arguments: zip(
+    [
+      [0, 0, 0, 0],
+      [0x41, 0x42, 0x43, 0x44],
+    ],
+    [
+      0,
+      0x4142_4344,
+    ]
+  )
+)
+func seperateBytes(_ octets: [UInt8], `as` rawCode: FourCharCode) async throws {
+  #expect(
+    ClassicFourCharCode(rawOctets: octets[0], octets[1], octets[2], octets[3])
+      == ClassicFourCharCode(rawValue: rawCode)
+  )
+}

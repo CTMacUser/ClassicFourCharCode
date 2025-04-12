@@ -154,6 +154,41 @@ extension ClassicFourCharCode {
   public var isPrintable: Bool { !haveOctetsUnder(0x20) && !hasOctet(of: 0x7F) }
 }
 
+// MARK: More Initializers
+
+extension ClassicFourCharCode {
+  /// Creates a new code repeating the given byte value.
+  ///
+  /// - Parameter value: The octet to repeat.
+  /// - Postcondition: `self.elementsEqual(repeatElement(value, count: 4))`
+  @inlinable
+  public init(repeating value: Element) {
+    self.init(rawValue: FourCharCode(value) &* 0x0101_0101)
+  }
+
+  /// Creates a code from the given byte values, in order.
+  ///
+  /// - Parameters
+  ///   - first: The most-significant byte stored in the code.
+  ///   - second: The second-most significant byte stored in the code.
+  ///   - third: The second-lowest significant byte stored in the code.
+  ///   - fourth: The least-significant byte stored in the code.
+  /// - Postcondition: `self.elementsEqual([first, second, third, fourth])`
+  @inlinable
+  public init(
+    rawOctets first: Element,
+    _ second: Element,
+    _ third: Element,
+    _ fourth: Element
+  ) {
+    self.init(
+      rawValue: FourCharCode(first) &* 0x0100_0000 | FourCharCode(second)
+        &* 0x0001_0000 | FourCharCode(third) &* 0x0000_0100
+        | FourCharCode(fourth)
+    )
+  }
+}
+
 // MARK: Element Access
 
 extension ClassicFourCharCode: ContiguousBytes {
