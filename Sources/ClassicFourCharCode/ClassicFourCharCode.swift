@@ -353,6 +353,11 @@ extension ClassicFourCharCode: RandomAccessCollection, MutableCollection {
   }
 }
 
+extension ClassicFourCharCode: DataProtocol {
+  @inlinable
+  public var regions: SubSequence.Regions { subsequence.regions }
+}
+
 // MARK: Auxillary Types
 
 /// The index-block type for `ClassicFourCharCode`.
@@ -472,7 +477,7 @@ public struct ClassicFourCharCodeIndices: RandomAccessCollection, Equatable {
 
 /// The sub-sequence type for `ClassicFourCharCode`.
 public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
-  MutableCollection, ContiguousBytes
+  MutableCollection, ContiguousBytes, DataProtocol
 {
   /// The source of the octets.
   @usableFromInline
@@ -613,4 +618,7 @@ public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
       return try body(UnsafeRawBufferPointer($0))
     }!
   }
+
+  @inlinable
+  public var regions: CollectionOfOne<Self> { .init(self) }
 }

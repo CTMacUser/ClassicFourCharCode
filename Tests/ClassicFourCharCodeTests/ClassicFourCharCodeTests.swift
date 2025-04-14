@@ -462,3 +462,37 @@ func collection() async throws {
   #expect(result == .some(3))
   #expect(code.rawValue == 0xBBDE_BDE0)
 }
+
+/// Test data-region support.
+@Test(
+  "DataProtocol support",
+  arguments: zip(
+    [
+      0,
+      0x4142_4344,
+    ],
+    [
+      [0, 0, 0, 0],
+      [0x41, 0x42, 0x43, 0x44],
+    ]
+  )
+)
+func dataRegions(_ rawCode: FourCharCode, `as` octets: [UInt8]) async throws {
+  let code = ClassicFourCharCode(rawValue: rawCode)
+  let array1 = [UInt8](unsafeUninitializedCapacity: code.count) {
+    buffer,
+    initializedCount in
+    initializedCount = code.copyBytes(to: buffer)
+  }
+  #expect(array1.elementsEqual(octets))
+
+  // Manually
+  var array2 = [UInt8]()
+  array2.reserveCapacity(code.count)
+  for region in code.regions {
+    for byte in region {
+      array2.append(byte)
+    }
+  }
+  #expect(array2 == array1)
+}
