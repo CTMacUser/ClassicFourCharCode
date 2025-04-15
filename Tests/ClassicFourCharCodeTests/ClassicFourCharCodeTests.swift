@@ -496,3 +496,52 @@ func dataRegions(_ rawCode: FourCharCode, `as` octets: [UInt8]) async throws {
   }
   #expect(array2 == array1)
 }
+
+/// Test reading from iterators and sequences.
+@Test("Initialize from iterator/sequence")
+func initializeFromSequence() async throws {
+  let source2 = [0x41 as UInt8, 0x42, 0x43, 0x44, 0x61, 0x62, 0x63, 0x64]
+  do {
+    var iterator = source2.makeIterator()
+    let code1 = ClassicFourCharCode(extractingFrom: &iterator)
+    let code2 = ClassicFourCharCode(extractingFrom: &iterator)
+    #expect(code1 == .some(.init(rawValue: 0x4142_4344)))
+    #expect(code2 == .some(.init(rawValue: 0x6162_6364)))
+    #expect(iterator.next() == nil)
+  }
+  do {
+    var iterator = source2.prefix(3).makeIterator()
+    let code1 = ClassicFourCharCode(extractingFrom: &iterator)
+    #expect(code1 == .none)
+  }
+  do {
+    let code1 = ClassicFourCharCode(reading: source2.prefix(4))
+    #expect(code1 == .some(.init(rawValue: 0x4142_4344)))
+
+    let code2 = ClassicFourCharCode(reading: source2.prefix(4), totally: true)
+    #expect(code2 == .some(.init(rawValue: 0x4142_4344)))
+
+    let code3 = ClassicFourCharCode(reading: source2.prefix(4), totally: false)
+    #expect(code3 == .some(.init(rawValue: 0x4142_4344)))
+  }
+  do {
+    let code1 = ClassicFourCharCode(reading: source2.suffix(4))
+    #expect(code1 == .some(.init(rawValue: 0x6162_6364)))
+
+    let code2 = ClassicFourCharCode(reading: source2.suffix(4), totally: true)
+    #expect(code2 == .some(.init(rawValue: 0x6162_6364)))
+
+    let code3 = ClassicFourCharCode(reading: source2.suffix(4), totally: false)
+    #expect(code3 == .some(.init(rawValue: 0x6162_6364)))
+  }
+  do {
+    let code1 = ClassicFourCharCode(reading: source2)
+    #expect(code1 == .none)
+
+    let code2 = ClassicFourCharCode(reading: source2, totally: true)
+    #expect(code2 == .none)
+
+    let code3 = ClassicFourCharCode(reading: source2, totally: false)
+    #expect(code3 == .some(.init(rawValue: 0x4142_4344)))
+  }
+}

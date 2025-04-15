@@ -187,6 +187,44 @@ extension ClassicFourCharCode {
         | FourCharCode(fourth)
     )
   }
+
+  /// Creates a code from combining bytes extracted from the given iterator.
+  ///
+  /// - Parameter iterator: The source of the bytes to extract.
+  /// - Postcondition: `self.elementsEqual([A, B, C, D])`,
+  ///   where `A`, `B`, `C`, and `D` are the first four bytes extracted from
+  ///   `iterator` (in that order).
+  ///   Any later elements are untouched.
+  ///   If `iterator` doesn't have at least four elements available,
+  ///   this initializer fails.
+  public init?(extractingFrom iterator: inout some IteratorProtocol<Element>) {
+    guard let first = iterator.next(), let second = iterator.next(),
+      let third = iterator.next(), let fourth = iterator.next()
+    else { return nil }
+    self.init(rawOctets: first, second, third, fourth)
+  }
+
+  /// Creates a code from combining bytes read from the given sequence.
+  ///
+  /// - Parameters:
+  ///   - sequence: The source of the bytes to read.
+  ///   - useAllBytes: Whether every element from `sequence` needs to be read
+  ///     from.
+  ///     If not given,
+  ///     defaults to `true`,
+  ///     meaning the entire `sequence` needs to be read in.
+  /// - Postcondition: `self.elementsEqual(sequence.prefix(4))`.
+  ///   If the `sequence` either has less than four elements,
+  ///   or it has more than four elements while `useAllBytes` is `true`,
+  ///   this initializer fails.
+  public init?(
+    reading sequence: some Sequence<Element>,
+    totally useAllBytes: Bool = true
+  ) {
+    var iterator = sequence.makeIterator()
+    self.init(extractingFrom: &iterator)
+    guard !useAllBytes || iterator.next() == nil else { return nil }
+  }
 }
 
 // MARK: Element Access
