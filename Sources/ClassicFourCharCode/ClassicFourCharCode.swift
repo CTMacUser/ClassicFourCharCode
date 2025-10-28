@@ -150,7 +150,7 @@ extension ClassicFourCharCode {
   /// - Parameter value: The octet to repeat.
   /// - Postcondition: `self.elementsEqual(repeatElement(value, count: 4))`
   @inlinable
-  public init(repeating value: Element) {
+  public init(repeating value: UInt8) {
     self.init(rawValue: FourCharCode(value) &* 0x0101_0101)
   }
 
@@ -164,10 +164,10 @@ extension ClassicFourCharCode {
   /// - Postcondition: `self.elementsEqual([first, second, third, fourth])`
   @inlinable
   public init(
-    rawOctets first: Element,
-    _ second: Element,
-    _ third: Element,
-    _ fourth: Element
+    rawOctets first: UInt8,
+    _ second: UInt8,
+    _ third: UInt8,
+    _ fourth: UInt8
   ) {
     self.init(
       rawValue: FourCharCode(first) &* 0x0100_0000 | FourCharCode(second)
@@ -185,7 +185,7 @@ extension ClassicFourCharCode {
   ///   Any later elements are untouched.
   ///   If `iterator` doesn't have at least four elements available,
   ///   this initializer fails.
-  public init?(extractingFrom iterator: inout some IteratorProtocol<Element>) {
+  public init?(extractingFrom iterator: inout some IteratorProtocol<UInt8>) {
     guard let first = iterator.next(), let second = iterator.next(),
       let third = iterator.next(), let fourth = iterator.next()
     else { return nil }
@@ -206,7 +206,7 @@ extension ClassicFourCharCode {
   ///   or it has more than four elements while `useAllBytes` is `true`,
   ///   this initializer fails.
   public init?(
-    reading sequence: some Sequence<Element>,
+    reading sequence: some Sequence<UInt8>,
     totally useAllBytes: Bool = true
   ) {
     var iterator = sequence.makeIterator()
@@ -223,56 +223,5 @@ extension ClassicFourCharCode: ContiguousBytes {
   {
     var bigRawValue = rawValue.bigEndian
     return try Swift.withUnsafeBytes(of: &bigRawValue, body)
-  }
-}
-
-extension ClassicFourCharCode: Sequence {
-  public struct Iterator: IteratorProtocol {
-    /// The remaining octets to vend.
-    var remaining = 4
-    /// The embedded octets to vend.
-    var octets: UInt32
-
-    /// Creates a vended sequence of the octets of the given value,
-    /// but with that value's highest octet first.
-    ///
-    /// - Parameter codes: The value with all the vended octets embedded in it.
-    @usableFromInline
-    init(_ codes: FourCharCode) {
-      octets = codes.byteSwapped
-    }
-
-    mutating public func next() -> UInt8? {
-      guard remaining > 0 else { return nil }
-      defer { octets >>= 8 }
-
-      remaining -= 1
-      return UInt8(truncatingIfNeeded: octets)
-    }
-  }
-
-  public typealias Element = Iterator.Element
-
-  @inlinable
-  public func makeIterator() -> Iterator {
-    return .init(rawValue)
-  }
-
-  @inlinable
-  public var underestimatedCount: Int { MemoryLayout.size(ofValue: rawValue) }
-
-  @inlinable
-  public func _customContainsEquatableElement(_ element: Element) -> Bool? {
-    return .some(self.hasOctet(of: element))
-  }
-  @inlinable
-  public func withContiguousStorageIfAvailable<R>(
-    _ body: (UnsafeBufferPointer<Element>) throws -> R
-  ) rethrows -> R? {
-    return try .some(
-      self.withUnsafeBytes {
-        return try $0.withMemoryRebound(to: Element.self, body)
-      }
-    )
   }
 }

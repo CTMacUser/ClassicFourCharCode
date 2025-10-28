@@ -149,31 +149,6 @@ func memoryRead(_ rawCode: FourCharCode, _ octets: [UInt8]) async throws {
   #expect(code.withUnsafeBytes { $0.elementsEqual(octets) })
 }
 
-/// Test sequence support.
-@Test(
-  "Sequence support",
-  arguments: zip(
-    [
-      0,
-      0x4142_4344,
-    ],
-    [
-      [0, 0, 0, 0],
-      [0x41, 0x42, 0x43, 0x44],
-    ]
-  )
-)
-func sequencing(_ rawCode: FourCharCode, `as` octets: [UInt8]) async throws {
-  let code = ClassicFourCharCode(rawValue: rawCode)
-  let match = try #require(
-    code.withContiguousStorageIfAvailable { octets.elementsEqual($0) } as Bool?
-  )
-  #expect(match)
-  #expect(code.underestimatedCount == 4)
-  #expect(code.elementsEqual(octets))
-  #expect(!octets.map { code.contains($0) }.contains(false))
-}
-
 /// Test repeating-value initializer.
 @Test("Repeating single octet initializer")
 func repeating() async throws {
@@ -182,7 +157,9 @@ func repeating() async throws {
     let expectedRawValue = stride(from: 24, through: 0, by: -8).map {
       FourCharCode(i) << $0
     }.reduce(0, |)
-    #expect(code.elementsEqual(repeatElement(i, count: 4)))
+    #expect(code.withUnsafeBytes({ bufferPointer in
+      return bufferPointer.elementsEqual(repeatElement(i, count: 4))
+    }))
     #expect(code.rawValue == expectedRawValue)
   }
 }
