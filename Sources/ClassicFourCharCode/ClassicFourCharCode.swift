@@ -11,7 +11,7 @@ import Foundation
 /// The first character in the string maps to the highest order byte,
 /// down to the string's last character mapping to the lowest-order byte.
 public struct ClassicFourCharCode: RawRepresentable {
-  public var rawValue: FourCharCode
+  public let rawValue: FourCharCode
 
   public init(rawValue: RawValue) {
     self.rawValue = rawValue
@@ -277,7 +277,7 @@ extension ClassicFourCharCode: Sequence {
   }
 }
 
-extension ClassicFourCharCode: RandomAccessCollection, MutableCollection {
+extension ClassicFourCharCode: RandomAccessCollection {
   public typealias Indices = ClassicFourCharCodeIndices
   public typealias Index = Indices.Index
 
@@ -313,20 +313,10 @@ extension ClassicFourCharCode: RandomAccessCollection, MutableCollection {
   @inlinable
   public subscript(position: Index) -> Element {
     get { subsequence[position] }
-    set {
-      var copy = subsequence
-      copy[position] = newValue
-      rawValue = copy.base
-    }
   }
   @inlinable
   public subscript(bounds: Range<Index>) -> ClassicFourCharCodeSubSequence {
     get { subsequence[bounds] }
-    set {
-      var copy = subsequence
-      copy[bounds] = newValue
-      rawValue = copy.base
-    }
   }
 
   @inlinable
@@ -359,23 +349,6 @@ extension ClassicFourCharCode: RandomAccessCollection, MutableCollection {
   @inlinable
   public func distance(from start: Index, to end: Index) -> Int {
     return indices.distance(from: start, to: end)
-  }
-
-  @inlinable
-  public mutating func withContiguousMutableStorageIfAvailable<R>(
-    _ body: (inout UnsafeMutableBufferPointer<Element>) throws -> R
-  ) rethrows -> R? {
-    var copy = subsequence
-    let result = try copy.withContiguousMutableStorageIfAvailable(body)
-    rawValue = copy.base
-    return result
-  }
-
-  @inlinable
-  public mutating func swapAt(_ i: Index, _ j: Index) {
-    var copy = subsequence
-    copy.swapAt(i, j)
-    rawValue = copy.base
   }
 }
 
@@ -503,7 +476,7 @@ public struct ClassicFourCharCodeIndices: RandomAccessCollection, Equatable {
 
 /// The sub-sequence type for `ClassicFourCharCode`.
 public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
-  MutableCollection, ContiguousBytes, DataProtocol
+  ContiguousBytes, DataProtocol
 {
   /// The source of the octets.
   @usableFromInline
@@ -537,10 +510,6 @@ public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
       precondition(indices.contains(position))
       return Element(truncatingIfNeeded: base >> -position)
     }
-    set {
-      let flipMask = self[position] ^ newValue
-      base ^= FourCharCode(flipMask) << -position
-    }
   }
   public subscript(bounds: Range<Index>) -> Self {
     get {
@@ -548,17 +517,6 @@ public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
       precondition(bounds.isEmpty || indices.contains(bounds.lowerBound))
       // The last test above checks for misaligned indices.
       return .init(base: base, range: bounds)
-    }
-    set {
-      precondition(indexRange.contains(bounds))
-      precondition(bounds.isEmpty || indices.contains(bounds.lowerBound))
-      precondition(
-        distance(from: bounds.lowerBound, to: bounds.upperBound)
-          == newValue.count
-      )
-      for (si, ni) in zip(indices, newValue.indices) {
-        self[si] = newValue[ni]
-      }
     }
   }
 
@@ -609,32 +567,6 @@ public struct ClassicFourCharCodeSubSequence: RandomAccessCollection,
         }
       }
     )
-  }
-  mutating public func withContiguousMutableStorageIfAvailable<R>(
-    _ body: (inout UnsafeMutableBufferPointer<Element>) throws -> R
-  ) rethrows -> R? {
-    let start = startIndex / Indices.spacing + 3
-    let end = endIndex / Indices.spacing + 3
-    var bigBase = base.bigEndian
-    defer {
-      base = FourCharCode(bigEndian: bigBase)
-    }
-    return .some(
-      try withUnsafeMutablePointer(to: &bigBase) { fccPointer in
-        return try fccPointer.withMemoryRebound(to: UInt8.self, capacity: 4) {
-          let byteBuffer = UnsafeMutableBufferPointer(start: $0, count: 4)
-          var byteSlice = UnsafeMutableBufferPointer(
-            rebasing: byteBuffer[start..<end]
-          )
-          return try body(&byteSlice)
-        }
-      }
-    )
-  }
-
-  mutating public func swapAt(_ i: Index, _ j: Index) {
-    let flipMask = FourCharCode(truncatingIfNeeded: self[i] ^ self[j])
-    base ^= flipMask << -i | flipMask << -j
   }
 
   public func withUnsafeBytes<R>(_ body: (UnsafeRawBufferPointer) throws -> R)

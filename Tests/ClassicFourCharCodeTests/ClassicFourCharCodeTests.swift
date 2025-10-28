@@ -126,7 +126,7 @@ func printable(code: FourCharCode, expecting: Bool) async throws {
 func wholesaleAssignment() async throws {
   var code = ClassicFourCharCode(rawValue: 0x4142_4344)
   #expect(String(describing: code) == "ABCD")
-  code.rawValue = 0x4167_4344
+  code = ClassicFourCharCode(rawValue: 0x4167_4344)
   #expect(String(describing: code) == "AgCD")
 }
 
@@ -307,49 +307,6 @@ func subsequencing(_ rawCode: FourCharCode, `as` octets: [UInt8]) async throws {
   )
 }
 
-/// Test the mutating operations of a subsequence.
-@Test("SubSequence Mutations")
-func mutatingSubsequence() async throws {
-  // Start with swapping
-  let code = ClassicFourCharCode(rawValue: 0xE1D2_C3B4)
-  var subCode = code[code.startIndex..<code.endIndex]
-  subCode.swapAt(
-    subCode.index(after: subCode.startIndex),
-    subCode.index(before: subCode.endIndex)
-  )
-  try #require(
-    subCode.elementsEqual(ClassicFourCharCode(rawValue: 0xE1B4_C3D2))
-  )
-
-  // No change
-  let thirdIndex = subCode.index(subCode.startIndex, offsetBy: +2)
-  subCode.swapAt(thirdIndex, thirdIndex)
-  try #require(
-    subCode.elementsEqual(ClassicFourCharCode(rawValue: 0xE1B4_C3D2))
-  )
-
-  // Direct memory access, now mutable
-  subCode.withContiguousMutableStorageIfAvailable { buffer in
-    buffer[0] = 0xF0
-  }
-  try #require(
-    subCode.elementsEqual(ClassicFourCharCode(rawValue: 0xF0B4_C3D2))
-  )
-
-  // Subscripting
-  let validIndices = Array(subCode.indices)
-  #expect([0xF0, 0xB4, 0xC3, 0xD2] == validIndices.map { subCode[$0] })
-  subCode[validIndices.first!] += 1
-  try #require(
-    subCode.elementsEqual(ClassicFourCharCode(rawValue: 0xF1B4_C3D2))
-  )
-
-  subCode[subCode.startIndex..<thirdIndex] = code[thirdIndex..<code.endIndex]
-  try #require(
-    subCode.elementsEqual(ClassicFourCharCode(rawValue: 0xC3B4_C3D2))
-  )
-}
-
 /// Testing index shifting.
 @Test("Index manipulations")
 func indexing() async throws {
@@ -403,7 +360,7 @@ func indexing() async throws {
 @Test("Collection")
 func collection() async throws {
   // Length
-  var code = ClassicFourCharCode(rawOctets: 0xFE, 0xDC, 0xBA, 0x98)
+  let code = ClassicFourCharCode(rawOctets: 0xFE, 0xDC, 0xBA, 0x98)
   #expect(code.count == 4)
 
   // Single-step index update
@@ -427,20 +384,10 @@ func collection() async throws {
   #expect(code[index1] == 0xFE)
   #expect(index1 == code.startIndex)
 
-  // Single-element change through subscript
-  code[index1] = 0x76
-  #expect(code.rawValue == 0x76DC_BA98)
-
-  // Multiple-element change through subscript, and swapping
+  // Multi-step index update
   let index3 = code.index(index1, offsetBy: +2)
   let index2 = code.index(before: index3)
   let index4 = code.index(after: index3)
-  code.swapAt(index2, index4)
-  #expect(code.rawValue == 0x7698_BADC)
-  code[index1..<index3] = code[index3..<code.endIndex]
-  #expect(code.rawValue == 0xBADC_BADC)
-
-  // Multi-step index update
   #expect(code.index(index2, offsetBy: +2, limitedBy: code.endIndex) == index4)
   #expect(
     code.index(index2, offsetBy: +3, limitedBy: code.endIndex) == code.endIndex
@@ -450,17 +397,6 @@ func collection() async throws {
       == code.startIndex
   )
   #expect(code.index(index2, offsetBy: -2, limitedBy: code.startIndex) == nil)
-
-  // Mutating through direct memory access
-  let result = code.withContiguousMutableStorageIfAvailable { buffer in
-    buffer[0] += 1
-    buffer[1] += 2
-    buffer[2] += 3
-    buffer[3] += 4
-    return buffer.map { $0 % 3 }.reduce(0, +)
-  }
-  #expect(result == .some(3))
-  #expect(code.rawValue == 0xBBDE_BDE0)
 }
 
 /// Test data-region support.
