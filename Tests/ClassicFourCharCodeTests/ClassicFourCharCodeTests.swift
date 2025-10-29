@@ -157,9 +157,11 @@ func repeating() async throws {
     let expectedRawValue = stride(from: 24, through: 0, by: -8).map {
       FourCharCode(i) << $0
     }.reduce(0, |)
-    #expect(code.withUnsafeBytes({ bufferPointer in
-      return bufferPointer.elementsEqual(repeatElement(i, count: 4))
-    }))
+    #expect(
+      code.withUnsafeBytes({ bufferPointer in
+        return bufferPointer.elementsEqual(repeatElement(i, count: 4))
+      })
+    )
     #expect(code.rawValue == expectedRawValue)
   }
 }

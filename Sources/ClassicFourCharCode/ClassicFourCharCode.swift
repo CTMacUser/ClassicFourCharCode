@@ -35,11 +35,8 @@ extension ClassicFourCharCode: CustomDebugStringConvertible {
 extension ClassicFourCharCode: CustomStringConvertible {
   public var description: String {
     // Adapted from <https://stackoverflow.com/a/60367676/1010226>.
-    withUnsafePointer(to: rawValue.bigEndian) { wordPointer in
-      let wordBuffer = UnsafeBufferPointer(start: wordPointer, count: 1)
-      return wordBuffer.withMemoryRebound(to: UInt8.self) { byteBuffer in
-        return String.init(bytes: byteBuffer, encoding: .macOSRoman)!
-      }
+    withUnsafeBytes { buffer in
+      return .init(bytes: buffer, encoding: .macOSRoman)!
     }
   }
 }
