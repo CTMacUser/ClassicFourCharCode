@@ -149,26 +149,10 @@ func memoryRead(_ rawCode: FourCharCode, _ octets: [UInt8]) async throws {
   #expect(code.withUnsafeBytes { $0.elementsEqual(octets) })
 }
 
-/// Test repeating-value initializer.
-@Test("Repeating single octet initializer")
-func repeating() async throws {
-  for i in UInt8.min...UInt8.max {
-    let code = ClassicFourCharCode(repeating: i)
-    let expectedRawValue = stride(from: 24, through: 0, by: -8).map {
-      FourCharCode(i) << $0
-    }.reduce(0, |)
-    #expect(
-      code.withUnsafeBytes({ bufferPointer in
-        return bufferPointer.elementsEqual(repeatElement(i, count: 4))
-      })
-    )
-    #expect(code.rawValue == expectedRawValue)
-  }
-}
-
-/// Test seperate-bytes initializer.
+/// Test reading from inline arrays.
+@available(macOS 26.0, *)
 @Test(
-  "Individual byte initializer",
+  "Initialize from inline array",
   arguments: zip(
     [
       [0, 0, 0, 0],
@@ -180,58 +164,13 @@ func repeating() async throws {
     ]
   )
 )
-func seperateBytes(_ octets: [UInt8], `as` rawCode: FourCharCode) async throws {
-  #expect(
-    ClassicFourCharCode(rawOctets: octets[0], octets[1], octets[2], octets[3])
-      == ClassicFourCharCode(rawValue: rawCode)
-  )
-}
-
-/// Test reading from iterators and sequences.
-@Test("Initialize from iterator/sequence")
-func initializeFromSequence() async throws {
-  let source2 = [0x41 as UInt8, 0x42, 0x43, 0x44, 0x61, 0x62, 0x63, 0x64]
-  do {
-    var iterator = source2.makeIterator()
-    let code1 = ClassicFourCharCode(extractingFrom: &iterator)
-    let code2 = ClassicFourCharCode(extractingFrom: &iterator)
-    #expect(code1 == .some(.init(rawValue: 0x4142_4344)))
-    #expect(code2 == .some(.init(rawValue: 0x6162_6364)))
-    #expect(iterator.next() == nil)
-  }
-  do {
-    var iterator = source2.prefix(3).makeIterator()
-    let code1 = ClassicFourCharCode(extractingFrom: &iterator)
-    #expect(code1 == .none)
-  }
-  do {
-    let code1 = ClassicFourCharCode(reading: source2.prefix(4))
-    #expect(code1 == .some(.init(rawValue: 0x4142_4344)))
-
-    let code2 = ClassicFourCharCode(reading: source2.prefix(4), totally: true)
-    #expect(code2 == .some(.init(rawValue: 0x4142_4344)))
-
-    let code3 = ClassicFourCharCode(reading: source2.prefix(4), totally: false)
-    #expect(code3 == .some(.init(rawValue: 0x4142_4344)))
-  }
-  do {
-    let code1 = ClassicFourCharCode(reading: source2.suffix(4))
-    #expect(code1 == .some(.init(rawValue: 0x6162_6364)))
-
-    let code2 = ClassicFourCharCode(reading: source2.suffix(4), totally: true)
-    #expect(code2 == .some(.init(rawValue: 0x6162_6364)))
-
-    let code3 = ClassicFourCharCode(reading: source2.suffix(4), totally: false)
-    #expect(code3 == .some(.init(rawValue: 0x6162_6364)))
-  }
-  do {
-    let code1 = ClassicFourCharCode(reading: source2)
-    #expect(code1 == .none)
-
-    let code2 = ClassicFourCharCode(reading: source2, totally: true)
-    #expect(code2 == .none)
-
-    let code3 = ClassicFourCharCode(reading: source2, totally: false)
-    #expect(code3 == .some(.init(rawValue: 0x4142_4344)))
+func initializeFromArray(_ octets: [UInt8], `as` rawCode: FourCharCode)
+  async throws
+{
+  let array: InlineArray = [octets[0], octets[1], octets[2], octets[3]]
+  let code = ClassicFourCharCode(octets: array)
+  #expect(code.rawValue == rawCode)
+  code.octets.span.withUnsafeBufferPointer { buffer in
+    #expect(buffer.elementsEqual(octets))
   }
 }

@@ -139,79 +139,6 @@ extension ClassicFourCharCode {
   public var isPrintable: Bool { !haveOctetsUnder(0x20) && !hasOctet(of: 0x7F) }
 }
 
-// MARK: More Initializers
-
-extension ClassicFourCharCode {
-  /// Creates a new code repeating the given byte value.
-  ///
-  /// - Parameter value: The octet to repeat.
-  /// - Postcondition: `self.elementsEqual(repeatElement(value, count: 4))`
-  @inlinable
-  public init(repeating value: UInt8) {
-    self.init(rawValue: FourCharCode(value) &* 0x0101_0101)
-  }
-
-  /// Creates a code from the given byte values, in order.
-  ///
-  /// - Parameters
-  ///   - first: The most-significant byte stored in the code.
-  ///   - second: The second-most significant byte stored in the code.
-  ///   - third: The second-lowest significant byte stored in the code.
-  ///   - fourth: The least-significant byte stored in the code.
-  /// - Postcondition: `self.elementsEqual([first, second, third, fourth])`
-  @inlinable
-  public init(
-    rawOctets first: UInt8,
-    _ second: UInt8,
-    _ third: UInt8,
-    _ fourth: UInt8
-  ) {
-    self.init(
-      rawValue: FourCharCode(first) &* 0x0100_0000 | FourCharCode(second)
-        &* 0x0001_0000 | FourCharCode(third) &* 0x0000_0100
-        | FourCharCode(fourth)
-    )
-  }
-
-  /// Creates a code from combining bytes extracted from the given iterator.
-  ///
-  /// - Parameter iterator: The source of the bytes to extract.
-  /// - Postcondition: `self.elementsEqual([A, B, C, D])`,
-  ///   where `A`, `B`, `C`, and `D` are the first four bytes extracted from
-  ///   `iterator` (in that order).
-  ///   Any later elements are untouched.
-  ///   If `iterator` doesn't have at least four elements available,
-  ///   this initializer fails.
-  public init?(extractingFrom iterator: inout some IteratorProtocol<UInt8>) {
-    guard let first = iterator.next(), let second = iterator.next(),
-      let third = iterator.next(), let fourth = iterator.next()
-    else { return nil }
-    self.init(rawOctets: first, second, third, fourth)
-  }
-
-  /// Creates a code from combining bytes read from the given sequence.
-  ///
-  /// - Parameters:
-  ///   - sequence: The source of the bytes to read.
-  ///   - useAllBytes: Whether every element from `sequence` needs to be read
-  ///     from.
-  ///     If not given,
-  ///     defaults to `true`,
-  ///     meaning the entire `sequence` needs to be read in.
-  /// - Postcondition: `self.elementsEqual(sequence.prefix(4))`.
-  ///   If the `sequence` either has less than four elements,
-  ///   or it has more than four elements while `useAllBytes` is `true`,
-  ///   this initializer fails.
-  public init?(
-    reading sequence: some Sequence<UInt8>,
-    totally useAllBytes: Bool = true
-  ) {
-    var iterator = sequence.makeIterator()
-    self.init(extractingFrom: &iterator)
-    guard !useAllBytes || iterator.next() == nil else { return nil }
-  }
-}
-
 // MARK: Element Access
 
 extension ClassicFourCharCode: ContiguousBytes {
@@ -220,5 +147,41 @@ extension ClassicFourCharCode: ContiguousBytes {
   {
     var bigRawValue = rawValue.bigEndian
     return try Swift.withUnsafeBytes(of: &bigRawValue, body)
+  }
+}
+
+@available(macOS 26.0, *)
+extension ClassicFourCharCode {
+  /// The four character codes, separated.
+  ///
+  /// The first element is the string value's first character and
+  /// the numeric value's highest-order code.
+  /// Later elements correspond to later characters and lower-order codes.
+  public var octets: [4 of UInt8] {
+    .init({ index in
+      return .init(truncatingIfNeeded: rawValue >> (8 * (3 - index)))
+    })
+  }
+
+  /// Creates a code from the given quartet of byte values.
+  ///
+  /// - Parameter octets: The four separated character codes,
+  ///   starting from the string value's first character,
+  ///   which is also the numeric value's highest-order octet.
+  ///   Subsequent elements map to later characters in the string view and
+  ///   lower-order octets in the numeric value.
+  /// - Postcondition: `self.rawValue ==`
+  ///   `octets[0] << 24 | octets[1] << 16 | octets[2] << 8 | octets[3]`
+  public init(octets: [4 of UInt8]) {
+    self.init(
+      rawValue: octets.span.withUnsafeBufferPointer({ buffer in
+        return buffer.lazy.map(FourCharCode.init(truncatingIfNeeded:)).reduce(
+          into: 0
+        ) {
+          $0 <<= 8
+          $0 |= $1
+        }
+      })
+    )
   }
 }
