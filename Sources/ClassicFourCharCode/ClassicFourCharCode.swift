@@ -185,3 +185,8 @@ extension ClassicFourCharCode {
     )
   }
 }
+
+// MARK: Aliases
+
+/// A shorter name for `ClassicFourCharCode`.
+public typealias Simple4CC = ClassicFourCharCode
